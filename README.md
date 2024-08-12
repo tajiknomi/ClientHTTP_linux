@@ -25,7 +25,11 @@ Administer your linux client machine remotely via any REST/json server e.g. [Rem
 ***Persist (Optional)***: Implement your own persistence mechanism in "*src/operations.cpp::persist section*"
 
 ## Usage
-For server side; you can use [this server app as a command & control unit](https://github.com/tajiknomi/Remote_Administrative_Console/releases/tag/v1.0.0) or you can use your own REST/json http server.
+For server side; you can use [this server app as a command & control unit](https://github.com/tajiknomi/Remote_Administrative_Console/releases/tag/v1.0.0) 
+
+![Alt text](https://raw.githubusercontent.com/tajiknomi/Remote_Administrative_Console/main/screenshots/2.JPG)
+
+or you can use your own REST/json http server.
 
 Download the [clientHTTP_linux binaries]() from release section use the below command to communicate with the server.
 ```
