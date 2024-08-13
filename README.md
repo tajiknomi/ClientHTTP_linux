@@ -31,7 +31,7 @@ For server side; you can use [this server app as a command & control unit](https
 
 or you can use your own REST/json http server.
 
-Download the [clientHTTP_linux binaries]() from release section use the below command to communicate with the server.
+Download the [clientHTTP_linux binaries](https://github.com/tajiknomi/ClientHTTP_linux/releases/tag/v1.0.0) from release section use the below command to communicate with the server.
 ```
 chmod +x clienthttp
 ./clienthttp <URL/IP>
