@@ -310,11 +310,20 @@ void startJob(){
 
         const std::wstring shellType {L"/bin/sh"};
         std::wstring archivePath = path;
+        std::wstring filename = extractFilename(path);
         if((archivePath.back() == L'/') || (archivePath.back() == L'\\')){
             archivePath.pop_back();
-        }          
+        }
         const std::wstring compressionTool {L"tar"};
-        const std::wstring args {L"-czf " + std::wstring(L"\"") + archivePath + L".tar.gz\"" +  std::wstring(L" -C ") + std::wstring(L"\"") + path + L"\" ."}; 
+        std::wstring args {L"-czf " + std::wstring(L"\"") + archivePath + L".tar.gz\""};
+        if(fs::is_directory(path)){
+            // For directory --> tar -czf "archivePath.tar.gz" -C "path/to/dir" .
+            args += std::wstring(L" -C ") + std::wstring(L"\"") + path + L"\" .";
+        }
+        else{
+            // For file --> tar -czf "path/to/dir/file.tar.gz" -C "path/to/dir" "filename"                   
+            args += std::wstring(L" -C \"") + archivePath.substr(0, archivePath.size()-filename.size()) + std::wstring(L"\" \"") + filename + L"\"";
+        }
         const std::wstring output = executeCommand(shellType, compressionTool, args);     // Archive/Compress it
         archivePath.append(L".tar.gz");
         if(output.find(L"status: 0") != std::wstring::npos){
