@@ -36,7 +36,7 @@ Download the [clientHTTP_linux binaries]() from release section use the below co
 chmod +x clienthttp
 ./clienthttp <URL/IP>
 ```
-By default, the app will send hearbeat/alive signal every 1 sec in order to inform the server at *<URL/IP>* that it is alive and will collect the command/instruction from server (*if the server have any instruction/command/data for the client*). You can modify this interval time in main.cpp (variable --> *heartbeatTimerInSecs*).
+By default, the app will send hearbeat/alive signal every 1 sec in order to inform the server at *<URL/IP>* that it is alive and will collect the command/instruction from server (*if the server have any instruction/command/data for the client*). You can modify this interval time in main.cpp (variable ---> *heartbeatTimerInSecs*).
 
 The details of REST/json request/response are specified in the [REST requests (for advance users)](https://github.com/tajiknomi/Remote_Administrative_Console/blob/main/README.md#rest-requests-for-advance-users).
 
