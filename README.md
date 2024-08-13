@@ -31,9 +31,8 @@ For server side; you can use [this server app as a command & control unit](https
 
 or you can use your own REST/json http server.
 
-Download the [clientHTTP_linux binaries](https://github.com/tajiknomi/ClientHTTP_linux/releases/tag/v1.0.0) from release section use the below command to communicate with the server.
+Download the ready-to-use client from the [release section](https://github.com/tajiknomi/ClientHTTP_linux/releases) to communicate with the server.
 ```
-chmod +x clienthttp
 ./clienthttp <URL/IP>
 ```
 By default, the app will send hearbeat/alive signal every 1 sec in order to inform the server at *<URL/IP>* that it is alive and will collect the command/instruction from server (*if the server have any instruction/command/data for the client*). You can modify this interval time in main.cpp (variable ---> *heartbeatTimerInSecs*).
