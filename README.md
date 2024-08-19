@@ -27,9 +27,7 @@ Administer your linux client machine remotely via any REST/json server e.g. [Rem
 ## Usage
 For server side; you can use [this server app as a command & control unit](https://github.com/tajiknomi/Remote_Administrative_Console/releases/tag/v1.0.1) 
 
-![Alt text](https://raw.githubusercontent.com/tajiknomi/Remote_Administrative_Console/main/screenshots/2.JPG)
-
-or you can use your own REST/json http server.
+OR you can use your own REST/json http server.
 
 Download the ready-to-use client from the [release section](https://github.com/tajiknomi/ClientHTTP_linux/releases) to communicate with the server.
 ```
