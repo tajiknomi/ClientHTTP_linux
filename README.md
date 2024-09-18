@@ -59,25 +59,6 @@ cmake -DTARGET_ARCH=x64 ../
 cmake -DTARGET_ARCH=x86 ../
 ```
 
-### For C++17 supporting compilers
-Starting with [C++17 compatible compilers](https://en.cppreference.com/w/cpp/compiler_support/17), the [std::filesystem](https://en.cppreference.com/w/cpp/filesystem) is part of the standard library. If you are using C++17 or later, you may **NOT** need to link stdc++fs because the standard library will include filesystem support by default so in that case just remove the below in CMAKELists.txt file i.e.
-
-```
-target_link_libraries(clienthttp PRIVATE stdc++fs)
-```
-Also make sure to replace the replace the below lines in "*src/utilities.cpp*" and "*src/operations.cpp*"
-```
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-```
-with
-```
-#include <filesystem>
-namespace fs = std::filesystem;
-```
-
-For other issues, please open thread in issue section.
-
 ### Disclaimer
 This application is designed for personal and administrative use. It is not intended for unauthorized access, data manipulation, or any other malicious activity. Any use of this software for illegal purposes is strictly prohibited. You can use this service in offensive security scenarios on you own machine/network ONLY.
 The author disclaims all liability for any misuse or damage caused by the application. Users are solely responsible for their actions and the consequences thereof.

@@ -24,12 +24,24 @@
 #include <string>
 #include <queue>
 #include <mutex>
+#include "sharedResourceManager.h"
 
-extern std::queue<std::wstring> responseQueue;
-extern std::mutex responseQueueMutex;
-extern std::queue<std::wstring> jobQueue;
-extern std::mutex jobQueueMutex;
-extern std::wstring jsonSysInfo;
+#if __has_include(<filesystem>)
+    #include <filesystem>
+    namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+    #include <experimental/filesystem>
+    namespace fs = std::experimental::filesystem;
+#else
+    #error "Neither <filesystem> nor <experimental/filesystem> are available."
+#endif
 
-bool isJobAvailable(const std::wstring &replyFromServer);
-void startJob();
+
+// extern std::queue<std::wstring> responseQueue;
+// extern std::mutex responseQueueMutex;
+// extern std::queue<std::wstring> jobQueue;
+// extern std::mutex jobQueueMutex;
+// extern std::wstring jsonSysInfo;
+
+bool isJobAvailable(const std::wstring &replyFromServe);
+void startJob(SharedResourceManager &sharedResources);

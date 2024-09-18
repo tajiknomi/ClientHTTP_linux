@@ -19,12 +19,28 @@
 // SOFTWARE. 
 
 
-
 #pragma once
+#include <queue>
+#include <mutex>
 
-#include <string>
-#include "base64.h"
+class SharedResourceManager {
 
-#define READ_BUFFER_SIZE 1024   // Receiving Buffer Size in bytes
+private:
+	std::queue<std::wstring> responseQueue;
+	std::mutex responseQueueMutex;
+	std::queue<std::wstring> jobQueue;
+	std::mutex jobQueueMutex;
+	std::wstring jsonSysInfo;
+	std::mutex jsonSysInfoMutex;
 
-std::wstring httpPost(const std::wstring &url, const std::wstring &port, const std::wstring &request);
+
+
+public:
+	void pushResponse(const std::wstring &response);
+	std::wstring popResponse(void);
+	void pushJob(const std::wstring &job);
+	std::wstring popJob(void);
+	bool isResponseAvailable(void);
+	void setSysInfoInJson(const std::wstring &sysInfoJson);
+	std::wstring getSysInfoInJson(void);
+};

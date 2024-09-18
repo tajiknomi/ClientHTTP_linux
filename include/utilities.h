@@ -27,7 +27,20 @@
 #include <vector>
 #include <system_error>
 
+#if __has_include(<filesystem>)
+    #include <filesystem>
+    namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+    #include <experimental/filesystem>
+    namespace fs = std::experimental::filesystem;
+#else
+    #error "Neither <filesystem> nor <experimental/filesystem> are available."
+#endif
+
+
 #define RANDOM_NUMBER_LENGTH    15
+
+bool isValidPort(const std::string& portNum);
 
 bool hasWritePermissionForDirectory(const std::wstring &dirPath);
 

