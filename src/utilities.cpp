@@ -30,7 +30,6 @@
 #include <fstream>
 #include "json.h"
 #include <iostream>
-#include <experimental/filesystem>
 #include <cstring>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -42,7 +41,32 @@
 
 #define RANDOM_NUMBER_LENGTH    15
 
-namespace fs = std::experimental::filesystem;
+
+bool isValidPort(const std::string& portNum) {
+
+	for (char c : portNum) {
+		if (!std::isdigit(c)) {
+			std::cerr << "PORT is invalid, please put only the number for PORT [1 - 65535]\n";
+			return false;
+		}
+	}
+	try {
+		int port = std::stoi(portNum);
+		if (port < 1 || port > 65535) {
+			std::cerr << "PORT is invalid, please select a PORT in the range [1 - 65535]\n";
+			return false;
+		}
+	}
+	catch (const std::invalid_argument&) {
+		std::cerr << "PORT is invalid, please enter a valid number in the range [1 - 65535]\n";
+		return false;
+	}
+	catch (const std::out_of_range&) {
+		std::cerr << "PORT is invalid, number out of range\n";
+		return false;
+	}
+	return true;
+}
 
 bool hasWritePermissionForDirectory(const std::wstring &dirPath){
     

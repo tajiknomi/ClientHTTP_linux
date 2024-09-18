@@ -39,6 +39,7 @@ set(SOURCES
     ${SOURCE_DIR}/json.cpp
     ${SOURCE_DIR}/utilities.cpp
     ${SOURCE_DIR}/operations.cpp
+    ${SOURCE_DIR}/sharedResourceManager.cpp
 )
 
 # Optionally, add headers for IDEs or reference
@@ -48,6 +49,7 @@ set(HEADERS
     ${HEADER_DIR}/json.h
     ${HEADER_DIR}/utilities.h
     ${HEADER_DIR}/operations.h
+    ${HEADER_DIR}/sharedResourceManager.h
 )
 
 # Create the executable (using only source files)
@@ -67,8 +69,35 @@ target_link_libraries(clienthttp PRIVATE CURL::libcurl)
 find_package(Threads REQUIRED)
 target_link_libraries(clienthttp PRIVATE Threads::Threads)
 
-# Link against the stdc++fs library
-target_link_libraries(clienthttp PRIVATE stdc++fs)
+# Check for filesystem support
+include(CheckCXXSourceCompiles)
+
+# Ensure CMake performs its internal checks with C++17 (Required for checking <filesystem> / <experimental/filesystem> before buidling the project)
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -std=c++17")
+
+# Test if <filesystem> is available
+check_cxx_source_compiles("
+    #include <filesystem>
+    int main() { std::filesystem::path p; return 0; }
+" HAS_FILESYSTEM)
+
+# Test if <experimental/filesystem> is available if <filesystem> isn't
+if(NOT HAS_FILESYSTEM)
+    check_cxx_source_compiles("
+        #include <experimental/filesystem>
+        int main() { std::experimental::filesystem::path p; return 0; }
+    " HAS_EXPERIMENTAL_FILESYSTEM)
+endif()
+
+# Set compiler definitions based on availability
+if(HAS_FILESYSTEM)
+    message(STATUS "Using <filesystem>")
+elseif(HAS_EXPERIMENTAL_FILESYSTEM)
+    message(STATUS "Using <experimental/filesystem>")
+    target_link_libraries(clienthttp PRIVATE stdc++fs)  # Link against stdc++fs when using experimental/filesystem
+else()
+    message(FATAL_ERROR "Neither <filesystem> nor <experimental/filesystem> is available.")
+endif()
 
 # Set linker flags to disable symbol generation
 set_target_properties(clienthttp PROPERTIES LINK_FLAGS_RELEASE "-s")
