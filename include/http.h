@@ -25,6 +25,23 @@
 #include <string>
 #include "base64.h"
 
-#define READ_BUFFER_SIZE 1024   // Receiving Buffer Size in bytes
+//#define READ_BUFFER_SIZE 1024   // Receiving Buffer Size in bytes
 
-std::wstring httpPost(const std::wstring &url, const std::wstring &port, const std::wstring &request);
+class HttpPost{
+
+using LINUX_SOCKET_FD = int;
+
+private:
+    const unsigned int READ_BUFFER_SIZE = 1024;
+    LINUX_SOCKET_FD tcpSocket;
+    
+private:
+    int createTcpSocket(void);
+    int connectTcp(const std::wstring &url, const std::wstring &port);
+    int sendHttpRequest(const std::wstring &request);
+    std::wstring recvHttpResponse(void);
+
+public:
+    std::wstring operator()(const std::wstring &url, const std::wstring &port, const std::wstring &request);    // Call Operator
+    ~HttpPost();
+};

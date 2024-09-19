@@ -33,21 +33,22 @@
 
 // ============================ PRIVATE FUNCTIONS ============================
 
-int createTcpSocket(void){
+int HttpPost::createTcpSocket(void){
         /* Build the socket. */
     struct protoent* protoent = getprotobyname("tcp");
     if (protoent == NULL) {
         perror("getprotobyname");
         return -1;
     }
-    int tcpSocket = socket(AF_INET, SOCK_STREAM, protoent->p_proto);
+    tcpSocket = socket(AF_INET, SOCK_STREAM, protoent->p_proto);
     if (tcpSocket == -1) {
         perror("socket");
         return -1;
     }
+    return 0;
 }
 
-int connectTcp(const int &socket, const std::wstring &url, const std::wstring &port){
+int HttpPost::connectTcp(const std::wstring &url, const std::wstring &port){
     /* Build the address. */
     struct hostent *hostent = gethostbyname(ws2s(url).c_str());
     if (hostent == NULL) {
@@ -66,14 +67,14 @@ int connectTcp(const int &socket, const std::wstring &url, const std::wstring &p
     sockaddr_in.sin_port = htons(server_port);
 
     /* connect. */
-    if (connect(socket, (struct sockaddr*)&sockaddr_in, sizeof(sockaddr_in)) == -1) {
+    if (connect(tcpSocket, (struct sockaddr*)&sockaddr_in, sizeof(sockaddr_in)) == -1) {
         //perror("connect");
-        close(socket);
+        close(tcpSocket);
         return -2;
     }
 }
 
-int sendHttpRequest(const int &socket, const std::wstring &request){
+int HttpPost::sendHttpRequest(const std::wstring &request){
     ssize_t nbytes_total;
     ssize_t nbytes_last;
     size_t request_len = request.length();
@@ -84,9 +85,9 @@ int sendHttpRequest(const int &socket, const std::wstring &request){
         std::wstring wideChunk = request.substr(nbytes_total);
         std::string narrowChunk = ws2s(wideChunk);
         size_t narrowBytesToSend = narrowChunk.length();  
-        int nbytes_last = write(socket, narrowChunk.c_str(), static_cast<int>(narrowBytesToSend));
+        int nbytes_last = write(tcpSocket, narrowChunk.c_str(), static_cast<int>(narrowBytesToSend));
         if (nbytes_last == -1) {       
-            close(socket);
+            close(tcpSocket);
             return -1;
             //return std::wstring();
         }
@@ -94,34 +95,34 @@ int sendHttpRequest(const int &socket, const std::wstring &request){
     }
 }
 
-std::wstring recvHttpResponse(const int &socket){
+std::wstring HttpPost::recvHttpResponse(void){
         /* Read the response with timeout. */
     char readBuff[READ_BUFFER_SIZE] = {};
     ssize_t nbytes=0;
 
     fd_set read_fds;
     FD_ZERO(&read_fds);
-    FD_SET(socket, &read_fds);
+    FD_SET(tcpSocket, &read_fds);
 
     struct timeval timeout;
     timeout.tv_sec = 0; 
     timeout.tv_usec = 500 * 1000;		// 500 miliseconds
 
     std::string tmpDataRead;
-    int select_result = select(socket + 1, &read_fds, NULL, NULL, &timeout);
+    int select_result = select(tcpSocket + 1, &read_fds, NULL, NULL, &timeout);
     if (select_result == -1) {
     //    perror("select");
-        close(socket);
+        close(tcpSocket);
         return std::wstring();
     }
     else if (select_result == 0) {
-        // Timeout occurred, no data received within 2 seconds
+        // Timeout occurred, if no data received within 2 seconds
         //std::cout << "Timeout occurred. No data received within 2 seconds." << std::endl;
-        close(socket);
+        close(tcpSocket);
         return std::wstring();
     }
-    if (FD_ISSET(socket, &read_fds)) {
-        while ((nbytes = read(socket, readBuff, READ_BUFFER_SIZE)) > 0) {
+    if (FD_ISSET(tcpSocket, &read_fds)) {
+        while ((nbytes = read(tcpSocket, readBuff, READ_BUFFER_SIZE)) > 0) {
             // Process the received data
             //write(STDOUT_FILENO, readBuff, nbytes);
             readBuff[nbytes] = 0x00;
@@ -130,7 +131,7 @@ std::wstring recvHttpResponse(const int &socket){
     }
     if (nbytes == -1) {
         perror("read");
-        close(socket);
+        close(tcpSocket);
         return std::wstring();
     }
     return s2ws(tmpDataRead);
@@ -139,14 +140,14 @@ std::wstring recvHttpResponse(const int &socket){
 
 // ============================ PUBLIC API ============================
 
-std::wstring httpPost(const std::wstring &url, const std::wstring &port, const std::wstring &request) {
+std::wstring HttpPost::operator()(const std::wstring &url, const std::wstring &port, const std::wstring &request) {
 
     const int tcpSocket = createTcpSocket();
     if(tcpSocket == -1){
         exit(-1);
     }
 
-    int retValue = connectTcp(tcpSocket, url, port);
+    int retValue = connectTcp(url, port);
     if(retValue == -1){
         exit(-1);
     }
@@ -155,11 +156,11 @@ std::wstring httpPost(const std::wstring &url, const std::wstring &port, const s
         return std::wstring();
     }
 
-    retValue = sendHttpRequest(tcpSocket, request);
+    retValue = sendHttpRequest(request);
     if(retValue == -1){
         return std::wstring();
     }
-    std::wstring readBuffStr = recvHttpResponse(tcpSocket);
+    std::wstring readBuffStr = recvHttpResponse();
     if(readBuffStr.empty()){
         return std::wstring();
     }
@@ -172,4 +173,8 @@ std::wstring httpPost(const std::wstring &url, const std::wstring &port, const s
     }
     close(tcpSocket);
     return decodedData;
+}
+
+HttpPost::~HttpPost(){
+    close(tcpSocket);
 }

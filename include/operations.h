@@ -37,11 +37,5 @@
 #endif
 
 
-// extern std::queue<std::wstring> responseQueue;
-// extern std::mutex responseQueueMutex;
-// extern std::queue<std::wstring> jobQueue;
-// extern std::mutex jobQueueMutex;
-// extern std::wstring jsonSysInfo;
-
 bool isJobAvailable(const std::wstring &replyFromServe);
 void startJob(SharedResourceManager &sharedResources);
