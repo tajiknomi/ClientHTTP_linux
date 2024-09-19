@@ -24,9 +24,6 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--enable-new-dtags")
 # Set the build RUNPATH (used during runtime time)
 set(CMAKE_BUILD_RPATH "$ORIGIN;$ORIGIN/lib")
 
-# Set the build type to Release
-set(CMAKE_BUILD_TYPE "Release")
-
 # Set source and header file directories
 set(SOURCE_DIR src)
 set(HEADER_DIR include)
