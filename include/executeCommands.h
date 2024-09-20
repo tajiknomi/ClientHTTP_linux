@@ -18,27 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE. 
 
-
 #pragma once
-#include <queue>
-#include <mutex>
+#include <string>
 
-class SharedResourceManager {
-
-private:
-	std::queue<std::wstring> responseQueue;
-	std::mutex responseQueueMutex;
-	std::queue<std::wstring> jobQueue;
-	std::mutex jobQueueMutex;
-	std::wstring jsonSysInfo;
-	std::mutex jsonSysInfoMutex;
+class executeCommand{
 
 public:
-	void pushResponse(const std::wstring &response);
-	std::wstring popResponse(void);
-	void pushJob(const std::wstring &job);
-	std::wstring popJob(void);
-	bool isResponseAvailable(void);
-	void setSysInfoInJson(const std::wstring &sysInfoJson);
-	std::wstring getSysInfoInJson(void);
+    std::wstring operator()(const std::wstring& shellType, const std::wstring& command, const std::wstring& args);
 };

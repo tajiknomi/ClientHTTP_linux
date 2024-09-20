@@ -20,25 +20,18 @@
 
 
 #pragma once
-#include <queue>
-#include <mutex>
 
-class SharedResourceManager {
+#include <string>
+#include <vector>
 
-private:
-	std::queue<std::wstring> responseQueue;
-	std::mutex responseQueueMutex;
-	std::queue<std::wstring> jobQueue;
-	std::mutex jobQueueMutex;
-	std::wstring jsonSysInfo;
-	std::mutex jsonSysInfoMutex;
+class StringUtils {
 
 public:
-	void pushResponse(const std::wstring &response);
-	std::wstring popResponse(void);
-	void pushJob(const std::wstring &job);
-	std::wstring popJob(void);
-	bool isResponseAvailable(void);
-	void setSysInfoInJson(const std::wstring &sysInfoJson);
-	std::wstring getSysInfoInJson(void);
+	static std::wstring s2ws(const std::string& str);
+	static std::string ws2s(const std::wstring& wstr);
+	static std::string convertWStringToUTF8(const std::wstring& wstr);
+	static std::vector<std::string> extract_items_from_str(const std::string& input_str, const std::string& delimiter);
+	static std::string wstring_to_utf8(const std::wstring& wideStr);
+	static std::wstring utf8_to_wstring(const std::string& str);
+	static std::wstring extractFilename(const std::wstring& filePath);
 };

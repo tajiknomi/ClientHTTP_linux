@@ -30,6 +30,7 @@
 #include "json.h"
 #include <chrono>
 #include <thread>
+#include "stringUtil.h"
 
 // ============================ PRIVATE FUNCTIONS ============================
 
@@ -50,7 +51,7 @@ int HttpPost::createTcpSocket(void){
 
 int HttpPost::connectTcp(const std::wstring &url, const std::wstring &port){
     /* Build the address. */
-    struct hostent *hostent = gethostbyname(ws2s(url).c_str());
+    struct hostent *hostent = gethostbyname(StringUtils::ws2s(url).c_str());
     if (hostent == NULL) {
         std::wcerr << "error: gethostbyname(\"" << url << "\")" << std::endl;
         return -1;
@@ -83,7 +84,7 @@ int HttpPost::sendHttpRequest(const std::wstring &request){
     nbytes_total = 0;
     while (nbytes_total < request_len) {            // send data to server
         std::wstring wideChunk = request.substr(nbytes_total);
-        std::string narrowChunk = ws2s(wideChunk);
+        std::string narrowChunk = StringUtils::ws2s(wideChunk);
         size_t narrowBytesToSend = narrowChunk.length();  
         int nbytes_last = write(tcpSocket, narrowChunk.c_str(), static_cast<int>(narrowBytesToSend));
         if (nbytes_last == -1) {       
@@ -96,7 +97,7 @@ int HttpPost::sendHttpRequest(const std::wstring &request){
 }
 
 std::wstring HttpPost::recvHttpResponse(void){
-        /* Read the response with timeout. */
+    /* Read the response with timeout. */
     char readBuff[READ_BUFFER_SIZE] = {};
     ssize_t nbytes=0;
 
@@ -104,12 +105,12 @@ std::wstring HttpPost::recvHttpResponse(void){
     FD_ZERO(&read_fds);
     FD_SET(tcpSocket, &read_fds);
 
-    struct timeval timeout;
-    timeout.tv_sec = 0; 
-    timeout.tv_usec = 500 * 1000;		// 500 miliseconds
+    struct timeval selectTimeout;
+    selectTimeout.tv_sec = 0; 
+    selectTimeout.tv_usec = 500 * 1000;		// 500 miliseconds
 
     std::string tmpDataRead;
-    int select_result = select(tcpSocket + 1, &read_fds, NULL, NULL, &timeout);
+    int select_result = select(tcpSocket + 1, &read_fds, NULL, NULL, &selectTimeout);
     if (select_result == -1) {
     //    perror("select");
         close(tcpSocket);
@@ -134,7 +135,7 @@ std::wstring HttpPost::recvHttpResponse(void){
         close(tcpSocket);
         return std::wstring();
     }
-    return s2ws(tmpDataRead);
+    return StringUtils::s2ws(tmpDataRead);
 }
 
 
@@ -169,7 +170,7 @@ std::wstring HttpPost::operator()(const std::wstring &url, const std::wstring &p
     std::wstring decodedData;
     if (found != std::string::npos){
         std::string b64Data = extractBase64Data(readBuffStr.substr(found));
-        decodedData = s2ws(base64_decode(b64Data.c_str()));
+        decodedData = StringUtils::s2ws(base64_decode(b64Data.c_str()));
     }
     close(tcpSocket);
     return decodedData;

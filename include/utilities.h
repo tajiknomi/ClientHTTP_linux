@@ -25,7 +25,6 @@
 #include "utilities.h"
 #include <string>
 #include <vector>
-#include <system_error>
 
 #if __has_include(<filesystem>)
     #include <filesystem>
@@ -37,8 +36,7 @@
     #error "Neither <filesystem> nor <experimental/filesystem> are available."
 #endif
 
-
-#define RANDOM_NUMBER_LENGTH    15
+std::wstring createHeartbeatRequest(const std::wstring &sysInfoInJson);
 
 bool isValidPort(const std::string& portNum);
 
@@ -46,45 +44,15 @@ bool hasWritePermissionForDirectory(const std::wstring &dirPath);
 
 std::wstring changeDir(const std::wstring& newPath, std::error_code& ec);
 
-std::wstring s2ws(const std::string& str);
-
-std::string ws2s(const std::wstring& wstr);
-
-std::string wstring_to_utf8(const std::wstring& wideStr);
-
-std::wstring utf8_to_wstring(const std::string& utf8Str);
-
-std::wstring extractFilename(const std::wstring& filePath);
-
 std::wstring ExtractLastDirectoryName(const std::wstring& path);
 
 bool isExecutable(const std::wstring& path);
 
 std::size_t calculateDirectorySize(const std::string& path);
 
-std::wstring getComputerName();
-
-std::wstring getUserName();
-
-std::string generateRandomAlphanumeric(int length, long long seed);
-
-std::wstring getSysInfo();
-
 std::string extractBase64Data(const std::wstring &buff);
-
-std::vector<std::string> extract_items_from_str(const std::string &input_str, const std::string &delimiter);
 
 std::wstring ReplaceTildeWithPath(const std::wstring& filePath);
 
 bool isDataServerAvailable(const std::string& url);
 
-bool DownloadFileFromURL(const std::wstring& url, const std::wstring& outputDirPath);
-
-bool DownloadDirectoryFromURL(const std::wstring& url, const std::wstring& outputDirPath);
-
-bool UploadFileToURL(const std::wstring& url, const std::wstring& filePath);
-
-bool UploadDirectoryToURL(const std::wstring& url, const std::wstring& dirPath, std::wstring &errorMsg, const std::wstring& extensions);
-//bool UploadDirectoryToURL(const std::wstring& url, const std::wstring& dirPath, std::wstring &errorMsg, const std::wstring& fileExtensions);
-
-std::wstring executeCommand(const std::wstring& shellType, const std::wstring& command, const std::wstring& args);

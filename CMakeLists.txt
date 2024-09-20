@@ -37,6 +37,11 @@ set(SOURCES
     ${SOURCE_DIR}/utilities.cpp
     ${SOURCE_DIR}/operations.cpp
     ${SOURCE_DIR}/sharedResourceManager.cpp
+    ${SOURCE_DIR}/stringUtil.cpp
+    ${SOURCE_DIR}/systemInformation.cpp
+    ${SOURCE_DIR}/fileTransferService.cpp
+    ${SOURCE_DIR}/executeCommands.cpp
+
 )
 
 # Optionally, add headers for IDEs or reference
@@ -47,6 +52,10 @@ set(HEADERS
     ${HEADER_DIR}/utilities.h
     ${HEADER_DIR}/operations.h
     ${HEADER_DIR}/sharedResourceManager.h
+    ${HEADER_DIR}/stringUtil.h
+    ${HEADER_DIR}/systemInformation.h
+    ${HEADER_DIR}/fileTransferService.h
+    ${HEADER_DIR}/executeCommands.h
 )
 
 # Create the executable (using only source files)

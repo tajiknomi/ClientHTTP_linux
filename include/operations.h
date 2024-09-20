@@ -22,8 +22,6 @@
 
 #pragma once
 #include <string>
-#include <queue>
-#include <mutex>
 #include "sharedResourceManager.h"
 
 #if __has_include(<filesystem>)

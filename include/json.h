@@ -24,14 +24,19 @@
 
 #include <vector>
 
-// data -----> json
-std::wstring to_json(const std::vector<std::wstring>& data);
+class JsonUtil {
 
-// json -----> data
-std::vector<std::wstring> from_json(const std::wstring& jsonData);
+private:
+    static std::string wstring_to_utf8(const std::wstring& wideStr);
+    static std::wstring utf8_to_wstring(const std::string& str);
 
-// Extract <value> from json using <key>
-std::wstring json_ExtractValue(const std::wstring& jsonData, const std::wstring& key);
-
-// Insert a key-value pair into an existing JSON string
-std::wstring json_AppendKeyValue(const std::wstring& jsonData, const std::wstring& key, const std::wstring& value);
+public:
+    // data -----> json
+    static std::wstring to_json(const std::vector<std::wstring>& data);
+    // json -----> data
+    static std::vector<std::wstring> from_json(const std::wstring& jsonData);
+    // Extract <value> from json using <key>
+    static std::wstring json_ExtractValue(const std::wstring& jsonData, const std::wstring& key);
+    // Insert a key-value pair into an existing JSON string
+    static std::wstring json_AppendKeyValue(const std::wstring& jsonData, const std::wstring& key, const std::wstring& value);
+};

@@ -20,25 +20,21 @@
 
 
 #pragma once
-#include <queue>
-#include <mutex>
 
-class SharedResourceManager {
+#include <string>
+#include <vector>
+
+class SysInformation {
 
 private:
-	std::queue<std::wstring> responseQueue;
-	std::mutex responseQueueMutex;
-	std::queue<std::wstring> jobQueue;
-	std::mutex jobQueueMutex;
-	std::wstring jsonSysInfo;
-	std::mutex jsonSysInfoMutex;
+	static const unsigned int RANDOM_NUMBER_LENGTH = 15;
+
+private:
+	static std::string generateRandomAlphanumeric(const int &length, const long long &seed);
+	static std::wstring s2ws(const std::string& str);
 
 public:
-	void pushResponse(const std::wstring &response);
-	std::wstring popResponse(void);
-	void pushJob(const std::wstring &job);
-	std::wstring popJob(void);
-	bool isResponseAvailable(void);
-	void setSysInfoInJson(const std::wstring &sysInfoJson);
-	std::wstring getSysInfoInJson(void);
+	static std::wstring getComputerName();
+	static std::wstring getUserName();
+	static std::vector<std::wstring> getSysInfo();
 };

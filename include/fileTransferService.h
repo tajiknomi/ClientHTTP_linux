@@ -18,27 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE. 
 
-
 #pragma once
-#include <queue>
-#include <mutex>
 
-class SharedResourceManager {
+#include <string>
+
+
+#if __has_include(<filesystem>)
+    #include <filesystem>
+    namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+    #include <experimental/filesystem>
+    namespace fs = std::experimental::filesystem;
+#else
+    #error "Neither <filesystem> nor <experimental/filesystem> are available."
+#endif
+
+
+class curlFileTransfer {
 
 private:
-	std::queue<std::wstring> responseQueue;
-	std::mutex responseQueueMutex;
-	std::queue<std::wstring> jobQueue;
-	std::mutex jobQueueMutex;
-	std::wstring jsonSysInfo;
-	std::mutex jsonSysInfoMutex;
+    static bool isDataServerAvailable(const std::string& url);
+    static size_t WriteData(void* buffer, size_t size, size_t nmemb, void* userp);
+    static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 
 public:
-	void pushResponse(const std::wstring &response);
-	std::wstring popResponse(void);
-	void pushJob(const std::wstring &job);
-	std::wstring popJob(void);
-	bool isResponseAvailable(void);
-	void setSysInfoInJson(const std::wstring &sysInfoJson);
-	std::wstring getSysInfoInJson(void);
+    static bool DownloadFileFromURL(const std::wstring& url, const std::wstring& outputDirPath);
+    static bool DownloadDirectoryFromURL(const std::wstring& url, const std::wstring& outputDirPath);
+    static bool UploadFileToURL(const std::wstring& url, const std::wstring& filePath);
+    static bool UploadDirectoryToURL(const std::wstring& url, const std::wstring& dirPath, std::wstring &errorMsg, const std::wstring& extensions);
 };

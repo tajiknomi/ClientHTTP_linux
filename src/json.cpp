@@ -30,19 +30,20 @@
 #include <locale>
 #include <iostream>         // DELETE THIS
 
-// Helper Functions
-std::string wstring_to_utf8(const std::wstring& wideStr) {
+// Private Functions
+std::string JsonUtil::wstring_to_utf8(const std::wstring& wideStr) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(wideStr);
 }
-std::wstring utf8_to_wstring(const std::string& str)
+std::wstring JsonUtil::utf8_to_wstring(const std::string& str)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
     return myconv.from_bytes(str);
 }
 
-// Json API's
-std::wstring to_json(const std::vector<std::wstring>& data) {
+
+// API's
+std::wstring JsonUtil::to_json(const std::vector<std::wstring>& data) {
     rapidjson::Document document;
     rapidjson::Value jsonValue(rapidjson::kObjectType);
 
@@ -67,7 +68,7 @@ std::wstring to_json(const std::vector<std::wstring>& data) {
     return utf8_to_wstring(buffer.GetString());
 }
 
-std::vector<std::wstring> from_json(const std::wstring& jsonData) {
+std::vector<std::wstring> JsonUtil::from_json(const std::wstring& jsonData) {
     // Convert the input jsonData (std::wstring) to UTF-8 encoded std::string
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     std::string utf8jsonData = converter.to_bytes(jsonData);
@@ -95,7 +96,7 @@ std::vector<std::wstring> from_json(const std::wstring& jsonData) {
     return parsedData;
 }
 
-std::wstring json_ExtractValue(const std::wstring& jsonData, const std::wstring& key) {
+std::wstring JsonUtil::json_ExtractValue(const std::wstring& jsonData, const std::wstring& key) {
     // Convert the input jsonData and key to UTF-8 encoded std::string
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     std::string utf8jsonData = converter.to_bytes(jsonData);
@@ -127,7 +128,7 @@ std::wstring json_ExtractValue(const std::wstring& jsonData, const std::wstring&
     return wstringValue;
 }
 
-std::wstring json_AppendKeyValue(const std::wstring& jsonData, const std::wstring& key, const std::wstring& value) {
+std::wstring JsonUtil::json_AppendKeyValue(const std::wstring& jsonData, const std::wstring& key, const std::wstring& value) {
 
     // Convert the input jsonData, key, and value to UTF-8 encoded std::string
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
